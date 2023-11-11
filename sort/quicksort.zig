@@ -2,6 +2,12 @@ const std = @import("std");
 const testing = std.testing;
 const mem = std.mem;
 
+fn swap(arr: []i32, lo: usize, hi: usize) void {
+    const tmp = arr[lo];
+    arr[lo] = arr[hi];
+    arr[hi] = tmp;
+}
+
 fn quicksort(arr: []i32, lo: usize, hi: usize) void {
     if (lo < hi) {
         var pi: usize = partition(arr, lo, hi);
@@ -16,11 +22,13 @@ fn partition(arr: []i32, lo: usize, hi: usize) usize {
     var j = lo;
     while (j < hi) : (j += 1) {
         if (arr[j] < pivot) {
-            mem.swap(i32, &arr[i], &arr[j]);
+            swap(arr, i, j);
+            //mem.swap(i32, &arr[i], &arr[j]);
             i = i + 1;
         }
     }
-    mem.swap(i32, &arr[i], &arr[hi]);
+    swap(arr, i, hi);
+    //mem.swap(i32, &arr[i], &arr[hi]);
     return i;
 }
 
