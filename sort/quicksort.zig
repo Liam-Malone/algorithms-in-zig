@@ -22,13 +22,13 @@ fn partition(arr: []i32, lo: usize, hi: usize) usize {
     var j = lo;
     while (j < hi) : (j += 1) {
         if (arr[j] < pivot) {
-            swap(arr, i, j);
-            //mem.swap(i32, &arr[i], &arr[j]);
+            //swap(arr, i, j);
+            mem.swap(i32, &arr[i], &arr[j]);
             i = i + 1;
         }
     }
-    swap(arr, i, hi);
-    //mem.swap(i32, &arr[i], &arr[hi]);
+    //swap(arr, i, hi);
+    mem.swap(i32, &arr[i], &arr[hi]);
     return i;
 }
 
