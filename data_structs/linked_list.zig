@@ -79,11 +79,6 @@ pub fn allocatingLinkedList(comptime T: type) type {
             }
         }
 
-        //**********************//
-        //  *** IMPORTANT: ***  //
-        //  This LEAKS memory   //
-        //  use ARENA allocator //
-        //**********************//
         pub fn to_string(self: *Self, allocator: *std.mem.Allocator) ?[]const u8 {
             var idx: usize = 0;
             var str: []const u8 = "";
@@ -91,8 +86,10 @@ pub fn allocatingLinkedList(comptime T: type) type {
                 var buf: [36]u8 = std.mem.zeroes([36]u8);
                 if (idx == 0) {
                     str = std.mem.concat(allocator.*, u8, &[_][]const u8{ str, std.fmt.bufPrint(&buf, "{any}", .{self.get(idx)}) catch "" }) catch "";
+                    errdefer allocator.free(str);
                 } else {
                     str = std.mem.concat(allocator.*, u8, &[_][]const u8{ str, std.fmt.bufPrint(&buf, ", {any}", .{self.get(idx)}) catch "" }) catch "";
+                    errdefer allocator.free(str);
                 }
             }
             return str;
