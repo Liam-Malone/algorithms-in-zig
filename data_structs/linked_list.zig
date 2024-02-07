@@ -84,24 +84,18 @@ pub fn allocatingLinkedList(comptime T: type) type {
         //  This LEAKS memory   //
         //  use ARENA allocator //
         //**********************//
-        pub fn to_string(self: *Self, allocator: *std.mem.Allocator) !std.ArrayList([]const u8) {
-            var u8s = std.ArrayList([]const u8).init(allocator.*);
-            errdefer u8s.deinit();
-            var pos: usize = 0;
-            var comma = ",";
-            var first: bool = true;
-            var exit: bool = false;
-            while (pos < self.len and !exit) : (pos += 1) {
-                const item: ?T = self.get(pos) orelse null;
-                if (item) |it| {
-                    if (!first) try u8s.append(@ptrCast((comma))) else first = false;
-                    const s = try std.fmt.allocPrint(allocator.*, "{any}", .{it});
-                    try u8s.append(s);
+        pub fn to_string(self: *Self, allocator: *std.mem.Allocator) ?[]const u8 {
+            var idx: usize = 0;
+            var str: []const u8 = "";
+            while (idx < self.len) : (idx += 1) {
+                var buf: [36]u8 = std.mem.zeroes([36]u8);
+                if (idx == 0) {
+                    str = std.mem.concat(allocator.*, u8, &[_][]const u8{ str, std.fmt.bufPrint(&buf, "{any}", .{self.get(idx)}) catch "" }) catch "";
                 } else {
-                    exit = true;
+                    str = std.mem.concat(allocator.*, u8, &[_][]const u8{ str, std.fmt.bufPrint(&buf, ", {any}", .{self.get(idx)}) catch "" }) catch "";
                 }
             }
-            return u8s;
+            return str;
         }
     };
 }
@@ -124,18 +118,6 @@ test "linked list: ensure get works" {
     try std.testing.expectEqual(@as(?i32, 42), list.get(0));
 }
 
-// braindead testing function... maybe I should write a better test
-fn compare_u8_arrays(first: [][]const u8, second: [][]const u8) bool {
-    if (first.len != second.len) return false;
-    for (first, second) |str_1, str_2| {
-        if (str_1.len != str_2.len) return false;
-        for (0..str_1.len) |i| {
-            if (str_1[i] != str_2[i]) return false;
-        }
-    }
-    return true;
-}
-
 test "linked list: ensure string forming works" {
     var allocator = std.testing.allocator;
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -146,18 +128,12 @@ test "linked list: ensure string forming works" {
     try list.push(2);
     try list.push(2);
 
-    var reference_list = std.ArrayList([]const u8).init(allocator);
-    defer reference_list.deinit();
+    var expected: []const u8 = "2, 2";
 
-    try reference_list.append(@ptrCast(("2")));
-    try reference_list.append(@ptrCast((",")));
-    try reference_list.append(@ptrCast(("2")));
-    var expected: [][]const u8 = reference_list.items;
-
-    const str_list = list.to_string(&arena_allocator) catch return error.FailedToFormatString;
+    const str_list = list.to_string(&arena_allocator) orelse "";
 
     defer arena.deinit();
 
-    var result: bool = compare_u8_arrays(expected, str_list.items);
+    var result: bool = std.mem.eql(u8, expected, str_list);
     try std.testing.expectEqual(true, result);
 }
